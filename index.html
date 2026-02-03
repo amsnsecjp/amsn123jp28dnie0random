@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueGame2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="brand">S.E.E.D.</div>
+            <div class="user-display" id="user-display">AGENT: GUEST | MODE: STANDBY</div>
+        </div>
+
+        <!-- 1. Start Screen -->
+        <div id="screen-start" class="screen">
+            <h1>Threat Avoid</h1>
+            <p class="subtitle">Information Intelligence Agency</p>
+
+            <div class="input-group">
+                <input type="text" id="username-input" placeholder="ENTER AGENT NAME">
+            </div>
+
+            <p class="instruction">SELECT DIFFICULTY</p>
+            <div class="difficulty-buttons">
+                <button id="btn-easy" class="btn btn-diff btn-easy" onclick="game.start('Easy')">EASY</button>
+                <button id="btn-normal" class="btn btn-diff btn-normal" onclick="game.start('Normal')" disabled>NORMAL
+                    🔒</button>
+                <button id="btn-hard" class="btn btn-diff btn-hard" onclick="game.start('Hard')" disabled>HARD
+                    🔒</button>
+            </div>
+
+            <!-- Reset Progress Button -->
+            <div style="margin-top: 20px;">
+                <button class="btn btn-sm" onclick="game.resetProgress()">RESET DATA</button>
+            </div>
+        </div>
+
+        <!-- 2. Game Screen (HUD Layout) -->
+        <div id="screen-game" class="screen hidden">
+            <!-- Central Holographic Window -->
+            <div class="holo-window">
+                <div class="info-bar">
+                    <span id="category-text">CATEGORY: SYSTEM</span>
+                    <span id="progress-text">CASE: 01 / 10</span>
+                </div>
+
+                <div class="question-card" id="question-text">
+                    Scanning for threats...
+                </div>
+
+                <div class="choices-grid" id="choices-container">
+                    <!-- Dynamic Choices will be injected here -->
+                </div>
+
+                <div class="game-controls">
+                    <button class="btn btn-sm" onclick="game.pauseGame()">PAUSE</button>
+                </div>
+            </div>
+
+            <!-- Left Metric (Time) -->
+            <div class="hud-meter meter-left">
+                <img src="assets/images/gauge_bg_time_v3.png" alt="Time Meter" class="meter-img">
+                <div class="meter-content">
+                    <div class="meter-label">TIME</div>
+                    <div class="meter-value" id="timer-text">180</div>
+                </div>
+            </div>
+
+            <!-- Right Metric (Score) -->
+            <div class="hud-meter meter-right">
+                <img src="assets/images/gauge_bg_score.png" alt="Score Meter" class="meter-img">
+                <div class="meter-content">
+                    <div class="meter-label">SCORE</div>
+                    <div class="meter-value" id="score-text">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pause-overlay" class="overlay hidden">
+            <h2>SYSTEM PAUSED</h2>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="game.resumeGame()">RESUME</button>
+                <button class="btn btn-danger" onclick="location.reload()">ABORT</button>
+            </div>
+        </div>
+
+        <!-- Feedback Overlay -->
+        <div id="feedback-overlay" class="overlay hidden">
+            <div class="feedback-content">
+                <div class="feedback-title" id="fb-title">CORRECT</div>
+                <div class="feedback-explanation" id="fb-explanation">explanation here...</div>
+                <button class="btn btn-primary" onclick="game.nextQuestion()">NEXT CASE</button>
+            </div>
+        </div>
+
+        <!-- 3. Result Screen -->
+        <div id="screen-result" class="screen hidden">
+            <h1 id="result-title">RESULT</h1>
+
+            <div class="result-container">
+                <!-- Left: Rank -->
+                <div class="rank-section">
+                    <div class="rank-label">ＲＡＮＫ</div>
+                    <div class="rank-large" id="final-rank">S</div>
+                </div>
+
+                <!-- Right: Score -->
+                <div class="score-section">
+                    <div class="score-label">ＳＣＯＲＥ</div>
+                    <div class="score-big" id="final-score">0</div>
+                    <p class="result-msg" id="final-msg">Evaluation pending...</p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="game.downloadLog()">LOG (TXT)</button>
+                <button class="btn btn-primary" onclick="location.reload()">トップに戻る</button>
+            </div>
+
+            <div class="review-area" id="review-list">
+                <!-- Review items injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/questions_easy.js"></script>
+    <script src="assets/js/questions_normal.js"></script>
+    <script src="assets/js/questions_hard.js"></script>
+    <script src="assets/js/questions_expert.js"></script>
+    <script src="assets/js/game.js"></script>
+</body>
+
+</html>
