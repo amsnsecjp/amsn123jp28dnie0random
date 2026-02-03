@@ -862,26 +862,105 @@ body.theme-expert h1 {
 /* Red */
 /* Responsive Design for Mobile/Tablet */
 @media (max-width: 768px) {
+
     /* Start Screen */
-    h1 { font-size: 2.5rem !important; margin-bottom: 30px; }
-    .subtitle { font-size: 1rem !important; margin-bottom: 30px; }
-    .input-group { max-width: 90% !important; margin-bottom: 30px; }
-    input[type='text'] { padding: 15px !important; font-size: 1.2rem !important; }
-    .btn { padding: 15px 25px !important; font-size: 1rem !important; }
-    .difficulty-buttons { gap: 10px; flex-wrap: wrap; justify-content: center; }
-    .btn-diff { flex: 1; min-width: 80px; }
+    h1 {
+        font-size: 2.5rem !important;
+        margin-bottom: 30px;
+    }
+
+    .subtitle {
+        font-size: 1rem !important;
+        margin-bottom: 30px;
+    }
+
+    .input-group {
+        max-width: 90% !important;
+        margin-bottom: 30px;
+    }
+
+    input[type='text'] {
+        padding: 15px !important;
+        font-size: 1.2rem !important;
+    }
+
+    .btn {
+        padding: 15px 25px !important;
+        font-size: 1rem !important;
+    }
+
+    .difficulty-buttons {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .btn-diff {
+        flex: 1;
+        min-width: 80px;
+    }
 
     /* Game Screen */
-    .holo-window { width: 95%; padding: 20px; }
-    .hud-meter { width: 150px; height: 150px; bottom: 10px; }
-    .meter-left { left: 5px; }
-    .meter-right { right: 5px; }
-    .meter-value { font-size: 2.5rem; }
-    .meter-label { font-size: 0.8rem; top: -20px; }
-    .score-big, .rank-large { font-size: 5rem !important; } /* Force resize */
-    .rank-label, .score-label { font-size: 1.2rem !important; margin-bottom: 10px; }
-    .result-container { gap: 10px; align-items: flex-start; }
-    .rank-section { padding-right: 10px; border-right: 1px solid var(--primary-dim); }
-    .choices-grid { display: flex; flex-direction: column; }
-    .choice-btn { min-width: 100%; min-height: 60px; padding: 15px; font-size: 1rem; }
+    .holo-window {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .hud-meter {
+        width: 150px;
+        height: 150px;
+        bottom: 10px;
+    }
+
+    .meter-left {
+        left: 5px;
+    }
+
+    .meter-right {
+        right: 5px;
+    }
+
+    .meter-value {
+        font-size: 2.5rem;
+    }
+
+    .meter-label {
+        font-size: 0.8rem;
+        top: -20px;
+    }
+
+    .score-big,
+    .rank-large {
+        font-size: 5rem !important;
+    }
+
+    /* Force resize */
+    .rank-label,
+    .score-label {
+        font-size: 1.2rem !important;
+        margin-bottom: 10px;
+    }
+
+    .result-container {
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .rank-section {
+        padding-right: 10px;
+        border-right: 1px solid var(--primary-dim);
+    }
+
+    .choices-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .choice-btn {
+        min-width: 100%;
+        min-height: 45px;
+        padding: 10px;
+        font-size: 0.9rem;
+    }
 }
