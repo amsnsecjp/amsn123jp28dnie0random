@@ -963,4 +963,13 @@ body.theme-expert h1 {
         padding: 10px;
         font-size: 0.9rem;
     }
+
+    /* Fix for Easy Mode (2-grid) overflow */
+    .grid-2 .choice-btn {
+        min-width: 100% !important;
+        /* Override desktop 300px */
+        font-size: 0.9rem;
+        /* Match mobile size */
+        padding: 10px;
+    }
 }
