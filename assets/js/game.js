@@ -1,3 +1,6 @@
+// ★ GASデプロイURL（デプロイ後にここを書き換える）
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyztqcAhYs8P9w5zFHZilV148TNZtiFl2rfkDRKITdXDrO7Fe9V2tzNznlIToCBEKAF4g/exec";
+
 class SecurityGame {
     constructor() {
         this.questions = [];
@@ -396,6 +399,37 @@ class SecurityGame {
         }
 
         this.renderReviewList();
+        this.sendLog(isTimeout);
+    }
+
+    sendLog(isTimeout = false) {
+        if (GAS_URL === "YOUR_GAS_DEPLOY_URL_HERE") {
+            console.warn("GAS_URL未設定: ログ送信スキップ");
+            return;
+        }
+
+        const resultText = (isTimeout || this.score <= 70) ? "MISSION FAILED" : "MISSION COMPLETED";
+
+        const payload = {
+            timestamp: new Date().toLocaleString('ja-JP'),
+            agent: this.username,
+            difficulty: this.difficulty,
+            score: this.score,
+            result: resultText,
+            questions: this.userAnswers.map(ans => ({
+                id: ans.qId,
+                correct: ans.isCorrect
+            }))
+        };
+
+        fetch(GAS_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(() => console.log("ログ送信完了"))
+        .catch(err => console.error("ログ送信エラー:", err));
     }
 
     renderReviewList() {
