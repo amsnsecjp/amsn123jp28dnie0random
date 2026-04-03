@@ -1,5 +1,24 @@
 // ★ GASデプロイURL（デプロイ後にここを書き換える）
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyztqcAhYs8P9w5zFHZilV148TNZtiFl2rfkDRKITdXDrO7Fe9V2tzNznlIToCBEKAF4g/exec";
+// ★ GAS側の Script Properties に設定したトークンと一致させる
+const GAS_TOKEN = "CHANGE_ME_TO_A_STRONG_TOKEN";
+
+function toHalfWidthAscii(value) {
+    return String(value || "")
+        .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/\u3000/g, " ");
+}
+
+function sanitizeAgentInputValue(value) {
+    return toHalfWidthAscii(value)
+        .replace(/\s+/g, "")
+        .replace(/[^A-Za-z0-9_-]/g, "")
+        .slice(0, 8);
+}
+
+function resolveAgentName(value) {
+    return sanitizeAgentInputValue(value) || "GUEST";
+}
 
 class SecurityGame {
     constructor() {
@@ -8,7 +27,7 @@ class SecurityGame {
         this.currentIndex = 0;
         this.score = 0;
         this.userAnswers = [];
-        this.username = localStorage.getItem('agent_name') || "GUEST"; // Load username
+        this.username = resolveAgentName(localStorage.getItem('agent_name')); // Load username
         this.difficulty = "Normal";
         this.timer = null;
         this.remainingTime = 180; // 3 minutes
@@ -22,8 +41,9 @@ class SecurityGame {
 
         // Restore username if exists
         const input = document.getElementById('username-input');
-        if (input && this.username !== "GUEST") {
-            input.value = this.username;
+        if (input) {
+            input.maxLength = 8;
+            input.value = this.username === "GUEST" ? "" : this.username;
         }
 
         // Load unlock state
@@ -38,10 +58,14 @@ class SecurityGame {
             });
             // Save username on change
             input.addEventListener('input', (e) => {
-                this.username = e.target.value.trim() || "GUEST";
+                const sanitized = sanitizeAgentInputValue(e.target.value);
+                e.target.value = sanitized;
+                this.username = sanitized || "GUEST";
                 localStorage.setItem('agent_name', this.username);
             });
         }
+
+        this.bindUiActions();
 
         // Cheat Code: Click Title 10 times
         let titleClicks = 0;
@@ -61,6 +85,29 @@ class SecurityGame {
                 }
             });
         }
+    }
+
+    bindUiActions() {
+        const difficultyButtons = document.querySelectorAll('[data-difficulty]');
+        difficultyButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const difficulty = btn.getAttribute('data-difficulty');
+                if (difficulty) this.start(difficulty);
+            });
+        });
+
+        const bind = (id, handler) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', handler);
+        };
+
+        bind('btn-reset-progress', () => this.resetProgress());
+        bind('btn-pause', () => this.pauseGame());
+        bind('btn-resume', () => this.resumeGame());
+        bind('btn-next-case', () => this.nextQuestion());
+        bind('btn-download-log', () => this.downloadLog());
+        bind('btn-abort', () => location.reload());
+        bind('btn-back-top', () => location.reload());
     }
 
     checkUnlocks() {
@@ -115,8 +162,10 @@ class SecurityGame {
 
     start(difficulty) {
         const input = document.getElementById('username-input');
-        if (input && input.value.trim() !== "") {
-            this.username = input.value.trim();
+        if (input) {
+            const sanitized = sanitizeAgentInputValue(input.value);
+            input.value = sanitized;
+            this.username = sanitized || "GUEST";
             localStorage.setItem('agent_name', this.username); // Ensure saved on start
         }
         this.difficulty = difficulty;
@@ -259,7 +308,10 @@ class SecurityGame {
                 else btn.classList.add('choice-red');
             }
 
-            btn.innerHTML = `<span class="choice-text">${choiceText}</span>`;
+            const choiceSpan = document.createElement('span');
+            choiceSpan.className = 'choice-text';
+            choiceSpan.textContent = choiceText;
+            btn.appendChild(choiceSpan);
             btn.onclick = () => this.submitAnswer(choiceText);
 
             container.appendChild(btn);
@@ -310,10 +362,14 @@ class SecurityGame {
             fbTitle.className = "feedback-title incorrect";
         }
 
-        fbExp.innerHTML = `
-            <strong>正解: ${q.answer}</strong><br><br>
-            ${q.explanation}
-        `;
+        // Build feedback using safe DOM APIs to avoid HTML injection.
+        fbExp.textContent = '';
+        const answerStrong = document.createElement('strong');
+        answerStrong.textContent = `正解: ${q.answer}`;
+        fbExp.appendChild(answerStrong);
+        fbExp.appendChild(document.createElement('br'));
+        fbExp.appendChild(document.createElement('br'));
+        fbExp.appendChild(document.createTextNode(q.explanation || ''));
     }
 
     nextQuestion() {
@@ -411,15 +467,14 @@ class SecurityGame {
         const resultText = (isTimeout || this.score <= 70) ? "MISSION FAILED" : "MISSION COMPLETED";
 
         const payload = {
-            timestamp: new Date().toLocaleString('ja-JP'),
             agent: this.username,
             difficulty: this.difficulty,
             score: this.score,
             result: resultText,
+            token: GAS_TOKEN,
             questions: this.userAnswers.map(ans => ({
                 id: ans.qId,
-                correct: ans.isCorrect,
-                choice: ans.userChoice
+                correct: ans.isCorrect
             }))
         };
 
@@ -435,26 +490,52 @@ class SecurityGame {
 
     renderReviewList() {
         const container = document.getElementById('review-list');
-        container.innerHTML = '<h3>MISON DEBRIEFING</h3>';
+        container.textContent = '';
+        const title = document.createElement('h3');
+        title.textContent = 'MISON DEBRIEFING';
+        container.appendChild(title);
 
         this.userAnswers.forEach((ans, index) => {
             const item = document.createElement('div');
             item.className = 'review-item';
             item.classList.add(ans.isCorrect ? 'review-correct' : 'review-incorrect');
 
-            item.innerHTML = `
-                <div class="review-header">
-                    <span class="review-q-num">Q${index + 1} [${ans.category}]</span>
-                    <span class="review-status">${ans.isCorrect ? "O" : "X"}</span>
-                </div>
-                <div class="review-body">
-                    <p class="review-text">${ans.question}</p>
-                    <div class="review-ans">
-                        <span>YOURS: ${ans.userChoice}</span>
-                        <span>Orbit: ${ans.correctAnswer}</span>
-                    </div>
-                </div>
-            `;
+            const header = document.createElement('div');
+            header.className = 'review-header';
+
+            const qNum = document.createElement('span');
+            qNum.className = 'review-q-num';
+            qNum.textContent = `Q${index + 1} [${ans.category}]`;
+
+            const status = document.createElement('span');
+            status.className = 'review-status';
+            status.textContent = ans.isCorrect ? 'O' : 'X';
+
+            header.appendChild(qNum);
+            header.appendChild(status);
+
+            const body = document.createElement('div');
+            body.className = 'review-body';
+
+            const reviewText = document.createElement('p');
+            reviewText.className = 'review-text';
+            reviewText.textContent = ans.question;
+
+            const reviewAns = document.createElement('div');
+            reviewAns.className = 'review-ans';
+
+            const yours = document.createElement('span');
+            yours.textContent = `YOURS: ${ans.userChoice}`;
+
+            const correct = document.createElement('span');
+            correct.textContent = `Orbit: ${ans.correctAnswer}`;
+
+            reviewAns.appendChild(yours);
+            reviewAns.appendChild(correct);
+            body.appendChild(reviewText);
+            body.appendChild(reviewAns);
+            item.appendChild(header);
+            item.appendChild(body);
             container.appendChild(item);
         });
     }

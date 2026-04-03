@@ -345,6 +345,10 @@ input[type="text"]:focus {
     /* Intermediate (was 30) */
 }
 
+.reset-row {
+    margin-top: 20px;
+}
+
 /* Buttons */
 .btn {
     padding: 16px 32px;

@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlueGame2</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data:; connect-src 'self' https://script.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+    <title>SeQA</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -18,25 +19,25 @@
 
         <!-- 1. Start Screen -->
         <div id="screen-start" class="screen">
-            <h1>Threat Avoid</h1>
+            <h1>SeQA</h1>
             <p class="subtitle">Information Intelligence Agency</p>
 
             <div class="input-group">
-                <input type="text" id="username-input" placeholder="ENTER AGENT NAME">
+                <input type="text" id="username-input" placeholder="ENTER AGENT NAME" maxlength="8" pattern="[A-Za-z0-9_-]{1,8}" autocapitalize="off" autocomplete="nickname" spellcheck="false">
             </div>
 
             <p class="instruction">SELECT DIFFICULTY</p>
             <div class="difficulty-buttons">
-                <button id="btn-easy" class="btn btn-diff btn-easy" onclick="game.start('Easy')">EASY</button>
-                <button id="btn-normal" class="btn btn-diff btn-normal" onclick="game.start('Normal')" disabled>NORMAL
+                <button id="btn-easy" class="btn btn-diff btn-easy" data-difficulty="Easy">EASY</button>
+                <button id="btn-normal" class="btn btn-diff btn-normal" data-difficulty="Normal" disabled>NORMAL
                     🔒</button>
-                <button id="btn-hard" class="btn btn-diff btn-hard" onclick="game.start('Hard')" disabled>HARD
+                <button id="btn-hard" class="btn btn-diff btn-hard" data-difficulty="Hard" disabled>HARD
                     🔒</button>
             </div>
 
             <!-- Reset Progress Button -->
-            <div style="margin-top: 20px;">
-                <button class="btn btn-sm" onclick="game.resetProgress()">RESET DATA</button>
+            <div class="reset-row">
+                <button id="btn-reset-progress" class="btn btn-sm">RESET DATA</button>
             </div>
         </div>
 
@@ -58,7 +59,7 @@
                 </div>
 
                 <div class="game-controls">
-                    <button class="btn btn-sm" onclick="game.pauseGame()">PAUSE</button>
+                    <button id="btn-pause" class="btn btn-sm">PAUSE</button>
                 </div>
             </div>
 
@@ -85,8 +86,8 @@
         <div id="pause-overlay" class="overlay hidden">
             <h2>SYSTEM PAUSED</h2>
             <div class="actions">
-                <button class="btn btn-primary" onclick="game.resumeGame()">RESUME</button>
-                <button class="btn btn-danger" onclick="location.reload()">ABORT</button>
+                <button id="btn-resume" class="btn btn-primary">RESUME</button>
+                <button id="btn-abort" class="btn btn-danger">ABORT</button>
             </div>
         </div>
 
@@ -95,7 +96,7 @@
             <div class="feedback-content">
                 <div class="feedback-title" id="fb-title">CORRECT</div>
                 <div class="feedback-explanation" id="fb-explanation">explanation here...</div>
-                <button class="btn btn-primary" onclick="game.nextQuestion()">NEXT CASE</button>
+                <button id="btn-next-case" class="btn btn-primary">NEXT CASE</button>
             </div>
         </div>
 
@@ -119,8 +120,8 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-secondary" onclick="game.downloadLog()">LOG (TXT)</button>
-                <button class="btn btn-primary" onclick="location.reload()">トップに戻る</button>
+                <button id="btn-download-log" class="btn btn-secondary">LOG (TXT)</button>
+                <button id="btn-back-top" class="btn btn-primary">トップに戻る</button>
             </div>
 
             <div class="review-area" id="review-list">
