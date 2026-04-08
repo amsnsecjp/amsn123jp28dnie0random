@@ -13,7 +13,7 @@ function sanitizeAgentInputValue(value) {
     return toHalfWidthAscii(value)
         .replace(/\s+/g, "")
         .replace(/[^A-Za-z0-9_-]/g, "")
-        .slice(0, 8);
+        .slice(0, 9);
 }
 
 function resolveAgentName(value) {
@@ -42,7 +42,7 @@ class SecurityGame {
         // Restore username if exists
         const input = document.getElementById('username-input');
         if (input) {
-            input.maxLength = 8;
+            input.maxLength = 9;
             input.value = this.username === "GUEST" ? "" : this.username;
         }
 

@@ -147,7 +147,7 @@ function normalizeAgent(value) {
   return toHalfWidthAscii(value)
     .replace(/\s+/g, "")
     .replace(/[^A-Za-z0-9_-]/g, "")
-    .slice(0, 8);
+    .slice(0, 9);
 }
 
 function assertAllowedKeys(obj, allowedKeys, label) {
@@ -172,7 +172,7 @@ function validatePayload(data) {
   }
 
   data.agent = normalizeAgent(data.agent);
-  if (!/^[A-Za-z0-9_-]{1,8}$/.test(data.agent)) {
+  if (!/^[A-Za-z0-9_-]{1,9}$/.test(data.agent)) {
     throw new Error("Invalid agent");
   }
 
