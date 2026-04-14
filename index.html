@@ -36,9 +36,32 @@
                     🔒</button>
             </div>
 
+            <div class="start-study-entry">
+                <button id="btn-study" type="button" class="btn btn-study-entry">
+                    <span class="btn-study-entry__main">学習アーカイブ</span>
+                    <span class="btn-study-entry__sub">出題済みの問題を復習（タップで解説を表示）</span>
+                </button>
+            </div>
+
             <!-- Reset Progress Button -->
             <div class="reset-row">
                 <button id="btn-reset-progress" class="btn btn-sm">RESET DATA</button>
+            </div>
+        </div>
+
+        <!-- STUDY Mode -->
+        <div id="screen-study" class="screen hidden study-screen">
+            <h2 class="study-heading">STUDY ARCHIVE</h2>
+            <p class="study-sub">出題された問題から順に解放されます（問題IDの昇順で表示）</p>
+            <div class="study-diff-tabs" role="tablist">
+                <button type="button" class="study-tab active" data-study-diff="Easy">EASY</button>
+                <button type="button" class="study-tab" data-study-diff="Normal">NORMAL</button>
+                <button type="button" class="study-tab" data-study-diff="Hard">HARD</button>
+                <button type="button" class="study-tab study-tab--secret" id="study-tab-expert" data-study-diff="Expert" hidden aria-hidden="true">EXPERT</button>
+            </div>
+            <div id="study-list" class="study-list"></div>
+            <div class="actions study-back-row">
+                <button id="btn-study-back" type="button" class="btn btn-primary">トップに戻る</button>
             </div>
         </div>
 
@@ -94,9 +117,27 @@
 
         <!-- Feedback Overlay -->
         <div id="feedback-overlay" class="overlay hidden">
-            <div class="feedback-content">
+            <div class="feedback-content feedback-content--scroll">
                 <div class="feedback-title" id="fb-title">CORRECT</div>
-                <div class="feedback-explanation" id="fb-explanation">explanation here...</div>
+                <div class="feedback-mark" id="fb-mark" aria-hidden="true">〇</div>
+                <div class="feedback-detail" id="fb-detail">
+                    <div class="fb-block">
+                        <div class="fb-label">問題</div>
+                        <p class="fb-q-text" id="fb-q-text"></p>
+                    </div>
+                    <div class="fb-block">
+                        <div class="fb-label">選択肢</div>
+                        <ul class="fb-choices-list" id="fb-choices-list"></ul>
+                    </div>
+                    <div class="fb-block fb-answer-row">
+                        <p><span class="fb-label-inline">あなたの回答：</span><span id="fb-your-answer"></span></p>
+                        <p><span class="fb-label-inline">正解：</span><span id="fb-correct-answer"></span></p>
+                    </div>
+                    <div class="fb-block">
+                        <div class="fb-label">解説（簡易）</div>
+                        <p class="fb-short-exp" id="fb-short-exp"></p>
+                    </div>
+                </div>
                 <button id="btn-next-case" class="btn btn-primary">NEXT CASE</button>
             </div>
         </div>
@@ -136,6 +177,7 @@
     <script src="assets/js/questions_normal.js"></script>
     <script src="assets/js/questions_hard.js"></script>
     <script src="assets/js/questions_expert.js"></script>
+    <script src="assets/js/study_details.js"></script>
     <script src="assets/js/game.js"></script>
 </body>
 

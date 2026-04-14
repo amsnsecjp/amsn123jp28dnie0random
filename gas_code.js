@@ -30,26 +30,28 @@ var ALLOWED_RESULTS = {
   "MISSION COMPLETED": true
 };
 
+/* Easy: E01–E45 / Normal: N01–N40 / Hard: H01–H40 / Expert: X01–X40 + 旧ログ用 */
 var ALLOWED_QUESTION_IDS = {
   E01: true, E02: true, E03: true, E04: true, E05: true, E06: true, E07: true, E08: true, E09: true,
   E10: true, E11: true, E12: true, E13: true, E14: true, E15: true, E16: true, E17: true, E18: true,
   E19: true, E20: true, E21: true, E22: true, E23: true, E24: true, E25: true, E26: true, E27: true,
-  E28: true, E29: true, E31: true, E32: true, E33: true, E34: true, E35: true, E37: true, E38: true,
-  E39: true,
+  E28: true, E29: true, E30: true, E31: true, E32: true, E33: true, E34: true, E35: true, E36: true, E37: true, E38: true,
+  E39: true, E40: true, E41: true, E42: true, E43: true, E44: true, E45: true,
   N01: true, N02: true, N03: true, N04: true, N05: true, N06: true, N07: true, N08: true, N09: true,
   N10: true, N11: true, N12: true, N13: true, N14: true, N15: true, N16: true, N17: true, N18: true,
-  N19: true, N20: true, N21: true, N22: true, N23: true, N24: true, N25: true, N26: true, N28: true,
-  N29: true, N30: true, N31: true, N32: true, N34: true, N35: true, N36: true, N37: true, N38: true,
+  N19: true, N20: true, N21: true, N22: true, N23: true, N24: true, N25: true, N26: true, N27: true,
+  N28: true, N29: true, N30: true, N31: true, N32: true, N33: true, N34: true, N35: true, N36: true, N37: true, N38: true,
   N39: true, N40: true,
   H01: true, H02: true, H03: true, H04: true, H05: true, H06: true, H07: true, H08: true, H09: true,
   H10: true, H11: true, H12: true, H13: true, H14: true, H15: true, H16: true, H17: true, H18: true,
-  H19: true, H20: true, H21: true, H23: true, H24: true, H25: true, H27: true, H28: true, H29: true,
-  H30: true, H31: true, H32: true, H33: true, H34: true, H35: true, H36: true, H37: true, H38: true,
-  H39: true, H41: true, H42: true, H43: true, H44: true,
-  X05: true, X06: true, X08: true, X09: true, X10: true, X11: true, X12: true, X13: true, X14: true,
-  X15: true, X18: true, X19: true, X20: true, X26: true, X27: true, X28: true, X29: true, X31: true,
-  X32: true, X33: true, X35: true, X36: true, X37: true, X38: true, X39: true, X41: true, X42: true,
-  X43: true, X44: true, X45: true, X46: true, X47: true, X48: true, X49: true, X50: true, X51: true,
+  H19: true, H20: true, H21: true, H22: true, H23: true, H24: true, H25: true, H26: true, H27: true, H28: true, H29: true,
+  H30: true, H31: true, H32: true, H33: true, H34: true, H35: true, H36: true, H37: true, H38: true, H39: true, H40: true,
+  H41: true, H42: true, H43: true, H44: true,
+  X01: true, X02: true, X03: true, X04: true, X05: true, X06: true, X07: true, X08: true, X09: true,
+  X10: true, X11: true, X12: true, X13: true, X14: true, X15: true, X16: true, X17: true, X18: true, X19: true, X20: true,
+  X21: true, X22: true, X23: true, X24: true, X25: true, X26: true, X27: true, X28: true, X29: true, X30: true, X31: true,
+  X32: true, X33: true, X34: true, X35: true, X36: true, X37: true, X38: true, X39: true, X40: true,
+  X41: true, X42: true, X43: true, X44: true, X45: true, X46: true, X47: true, X48: true, X49: true, X50: true, X51: true,
   X52: true, X53: true, X54: true, X55: true, X56: true, X57: true, X58: true, X59: true
 };
 

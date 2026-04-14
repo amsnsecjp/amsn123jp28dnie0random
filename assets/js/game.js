@@ -20,6 +20,97 @@ function resolveAgentName(value) {
     return sanitizeAgentInputValue(value) || "GUEST";
 }
 
+function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function getQuestionsByDifficulty(difficulty) {
+    if (difficulty === "Easy") return QUESTIONS_EASY;
+    if (difficulty === "Normal") return QUESTIONS_NORMAL;
+    if (difficulty === "Hard") return QUESTIONS_HARD;
+    if (difficulty === "Expert") return QUESTIONS_EXPERT;
+    return QUESTIONS_EASY;
+}
+
+/** E01 / N10 / X59 などをプレフィックス→番号の昇順で比較 */
+function compareQuestionId(idA, idB) {
+    const sa = String(idA);
+    const sb = String(idB);
+    const mA = sa.match(/^([A-Za-z]+)(\d+)$/);
+    const mB = sb.match(/^([A-Za-z]+)(\d+)$/);
+    if (!mA || !mB) return sa.localeCompare(sb);
+    const cmp = mA[1].toUpperCase().localeCompare(mB[1].toUpperCase());
+    if (cmp !== 0) return cmp;
+    return parseInt(mA[2], 10) - parseInt(mB[2], 10);
+}
+
+function lastGameIdsKey(difficulty) {
+    return `last_game_question_ids_${difficulty}`;
+}
+
+function studySeenKey(difficulty) {
+    return `study_seen_${difficulty}`;
+}
+
+function loadIdSet(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return new Set();
+        const arr = JSON.parse(raw);
+        return new Set(Array.isArray(arr) ? arr : []);
+    } catch {
+        return new Set();
+    }
+}
+
+function saveIdSet(key, set) {
+    localStorage.setItem(key, JSON.stringify([...set]));
+}
+
+function pickQuestionsForGame(allQuestions, difficulty) {
+    const excludeKey = lastGameIdsKey(difficulty);
+    let exclude = [];
+    try {
+        exclude = JSON.parse(localStorage.getItem(excludeKey) || "[]");
+        if (!Array.isArray(exclude)) exclude = [];
+    } catch {
+        exclude = [];
+    }
+    let pool = allQuestions.filter((q) => !exclude.includes(q.id));
+    if (pool.length < 10) {
+        pool = allQuestions.slice();
+    }
+    return shuffleArray(pool).slice(0, 10);
+}
+
+/**
+ * STUDY用の詳細解説（クイズ直後の解説は q.explanation のまま簡易）
+ */
+function buildStudyDetailText(q) {
+    if (typeof STUDY_DETAILS !== "undefined" && STUDY_DETAILS && STUDY_DETAILS[q.id]) {
+        return STUDY_DETAILS[q.id];
+    }
+    const wrong = (q.choices || []).filter((c) => c !== q.answer);
+    const wrongPart = wrong.length
+        ? wrong.map((w) => `「${w}」はこの設問の状況では不適切になりやすく、情報漏えい・手続き違反・被害拡大などのリスクが高まります。`).join("\n")
+        : "";
+    return `${q.explanation || ""}
+
+【なぜ正解か】
+正解「${q.answer}」は、設問の状況で最もリスクが低く、学校や組織のルール・セキュリティの基本に沿った選択です。
+
+【誤答の見方】
+${wrongPart || "（参考）他の選択肢は、確認不足や自己判断で問題が悪化しやすいです。"}
+
+【整理のヒント】
+分野は「${q.category || "一般"}」です。似た場面では「確認・報告・許可・最小権限」を意識すると選びやすくなります。`;
+}
+
 class SecurityGame {
     constructor() {
         this.questions = [];
@@ -32,6 +123,7 @@ class SecurityGame {
         this.timer = null;
         this.remainingTime = 180; // 3 minutes
         this.isPaused = false;
+        this.studyDifficulty = "Easy";
 
         // Removed explicit init() call from constructor to control timing
     }
@@ -48,6 +140,7 @@ class SecurityGame {
 
         // Load unlock state
         this.checkUnlocks();
+        this.refreshStudyExpertTab();
 
         // Bind Start Screen inputs
         if (input) {
@@ -108,6 +201,171 @@ class SecurityGame {
         bind('btn-download-log', () => this.downloadLog());
         bind('btn-abort', () => location.reload());
         bind('btn-back-top', () => location.reload());
+        bind("btn-study", () => this.openStudy());
+        bind("btn-study-back", () => this.closeStudy());
+
+        document.querySelectorAll("[data-study-diff]").forEach((tab) => {
+            tab.addEventListener("click", () => {
+                if (tab.disabled) return;
+                const d = tab.getAttribute("data-study-diff");
+                if (!d) return;
+                this.studyDifficulty = d;
+                document.querySelectorAll("[data-study-diff]").forEach((t) => t.classList.remove("active"));
+                tab.classList.add("active");
+                this.renderStudyList();
+            });
+        });
+    }
+
+    refreshStudyExpertTab() {
+        const tab = document.getElementById("study-tab-expert");
+        if (!tab) return;
+        if (localStorage.getItem("cleared_expert") === "true" && localStorage.getItem("expert_played_once") !== "true") {
+            localStorage.setItem("expert_played_once", "true");
+        }
+        const unlocked = localStorage.getItem("expert_played_once") === "true";
+        if (unlocked) {
+            tab.hidden = false;
+            tab.removeAttribute("aria-hidden");
+            tab.classList.remove("study-tab--secret");
+            tab.disabled = false;
+        } else {
+            tab.hidden = true;
+            tab.setAttribute("aria-hidden", "true");
+            tab.classList.add("study-tab--secret");
+        }
+    }
+
+    openStudy() {
+        this.refreshStudyExpertTab();
+        this.studyDifficulty = "Easy";
+        document.querySelectorAll("[data-study-diff]").forEach((t) => {
+            t.classList.toggle("active", t.getAttribute("data-study-diff") === "Easy");
+        });
+        this.showScreen("screen-study");
+        this.renderStudyList();
+    }
+
+    closeStudy() {
+        this.showScreen("screen-start");
+    }
+
+    renderStudyList() {
+        const container = document.getElementById("study-list");
+        if (!container) return;
+
+        const diff = this.studyDifficulty;
+        if (diff === "Expert" && localStorage.getItem("expert_played_once") !== "true") {
+            this.studyDifficulty = "Easy";
+            document.querySelectorAll("[data-study-diff]").forEach((t) => {
+                t.classList.toggle("active", t.getAttribute("data-study-diff") === "Easy");
+            });
+        }
+
+        const bank = getQuestionsByDifficulty(this.studyDifficulty);
+        const seen = loadIdSet(studySeenKey(this.studyDifficulty));
+        const sorted = bank.slice().sort((a, b) => compareQuestionId(a.id, b.id));
+
+        container.textContent = "";
+
+        sorted.forEach((q) => {
+            if (!seen.has(q.id)) {
+                const card = document.createElement("article");
+                card.className = "study-card";
+
+                const head = document.createElement("div");
+                head.className = "study-card-head";
+                const idSpan = document.createElement("span");
+                idSpan.className = "study-id";
+                idSpan.textContent = q.id;
+                const catSpan = document.createElement("span");
+                catSpan.className = "study-cat";
+                catSpan.textContent = q.category || "";
+                head.appendChild(idSpan);
+                head.appendChild(catSpan);
+                card.appendChild(head);
+
+                const body = document.createElement("div");
+                body.className = "study-card-body study-card-body--locked";
+                body.textContent = "？？";
+                card.appendChild(body);
+
+                container.appendChild(card);
+                return;
+            }
+
+            const wrap = document.createElement("article");
+            wrap.className = "study-card study-card--unlocked";
+
+            const details = document.createElement("details");
+            details.className = "study-card-details";
+
+            const summary = document.createElement("summary");
+            summary.className = "study-card-summary";
+
+            const head = document.createElement("div");
+            head.className = "study-card-head";
+            const idSpan = document.createElement("span");
+            idSpan.className = "study-id";
+            idSpan.textContent = q.id;
+            const catSpan = document.createElement("span");
+            catSpan.className = "study-cat";
+            catSpan.textContent = q.category || "";
+            head.appendChild(idSpan);
+            head.appendChild(catSpan);
+
+            const qBlock = document.createElement("p");
+            qBlock.className = "study-q study-q--only";
+            qBlock.textContent = q.text;
+
+            const hint = document.createElement("p");
+            hint.className = "study-open-hint";
+            hint.textContent = "クリックで選択肢・正解・解説を表示";
+
+            summary.appendChild(head);
+            summary.appendChild(qBlock);
+            summary.appendChild(hint);
+
+            const inner = document.createElement("div");
+            inner.className = "study-expand-inner";
+
+            const chLabel = document.createElement("div");
+            chLabel.className = "study-label";
+            chLabel.textContent = "選択肢";
+            const ul = document.createElement("ul");
+            ul.className = "study-choices";
+            (q.choices || []).forEach((c) => {
+                const li = document.createElement("li");
+                li.textContent = c;
+                if (c === q.answer) li.classList.add("study-ans-mark");
+                ul.appendChild(li);
+            });
+
+            const ansLine = document.createElement("p");
+            ansLine.className = "study-answer-line";
+            const strong = document.createElement("strong");
+            strong.textContent = "正解：";
+            ansLine.appendChild(strong);
+            ansLine.appendChild(document.createTextNode(q.answer || ""));
+
+            const detLabel = document.createElement("div");
+            detLabel.className = "study-label";
+            detLabel.textContent = "解説（詳細）";
+            const det = document.createElement("div");
+            det.className = "study-detail-text";
+            det.textContent = buildStudyDetailText(q);
+
+            inner.appendChild(chLabel);
+            inner.appendChild(ul);
+            inner.appendChild(ansLine);
+            inner.appendChild(detLabel);
+            inner.appendChild(det);
+
+            details.appendChild(summary);
+            details.appendChild(inner);
+            wrap.appendChild(details);
+            container.appendChild(wrap);
+        });
     }
 
     checkUnlocks() {
@@ -199,6 +457,7 @@ class SecurityGame {
             this.allQuestions = QUESTIONS_EXPERT;
             this.remainingTime = 90; // 1:30
             document.body.classList.add('theme-expert');
+            localStorage.setItem("expert_played_once", "true");
         } else {
             this.allQuestions = QUESTIONS_EASY; // Fallback
         }
@@ -213,12 +472,7 @@ class SecurityGame {
         // Reset Timer (Using remainingTime set above)
         this.startTimer();
 
-        // Shuffle and pick 10 (or less if not enough)
-        this.questions = this.allQuestions
-            .map(value => ({ value, sort: Math.random() }))
-            .sort((a, b) => a.sort - b.sort)
-            .map(({ value }) => value)
-            .slice(0, 10);
+        this.questions = pickQuestionsForGame(this.allQuestions, this.difficulty);
 
         this.showQuestion();
     }
@@ -270,6 +524,11 @@ class SecurityGame {
     showQuestion() {
         const q = this.questions[this.currentIndex];
 
+        const seenKey = studySeenKey(this.difficulty);
+        const seen = loadIdSet(seenKey);
+        seen.add(q.id);
+        saveIdSet(seenKey, seen);
+
         // Update Info
         document.getElementById('progress-text').textContent = `CASE: ${String(this.currentIndex + 1).padStart(2, '0')} / ${String(this.questions.length).padStart(2, '0')}`;
         document.getElementById('score-text').textContent = `${this.score}`;
@@ -288,25 +547,21 @@ class SecurityGame {
             container.classList.add('grid-3');
         }
 
-        // Use choices exactly as defined in the JSON (No random shuffling here to preserve Green/Yellow/Red order)
-        const displayChoices = q.choices;
+        const displayChoices = shuffleArray(q.choices);
+        q._displayChoices = displayChoices;
+
+        const colorClasses2 = ["choice-green", "choice-red"];
+        const colorClasses3 = ["choice-green", "choice-yellow", "choice-red"];
 
         displayChoices.forEach((choiceText, index) => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
 
-            // Assign colors based on position
-            // 2 items: 0=Green, 1=Red
-            // 3 items: 0=Green, 1=Yellow, 2=Red
-
-            if (displayChoices.length === 2) {
-                if (index === 0) btn.classList.add('choice-green');
-                else btn.classList.add('choice-red');
-            } else {
-                if (index === 0) btn.classList.add('choice-green');
-                else if (index === 1) btn.classList.add('choice-yellow');
-                else btn.classList.add('choice-red');
-            }
+            const colorCls =
+                displayChoices.length === 2
+                    ? colorClasses2[index] || "choice-green"
+                    : colorClasses3[index] || "choice-red";
+            btn.classList.add(colorCls);
 
             const choiceSpan = document.createElement('span');
             choiceSpan.className = 'choice-text';
@@ -345,31 +600,51 @@ class SecurityGame {
             timestamp: new Date().toISOString()
         });
 
-        this.showFeedback(isCorrect, q);
+        this.showFeedback(isCorrect, q, choice);
     }
 
-    showFeedback(isCorrect, q) {
+    showFeedback(isCorrect, q, userChoice) {
         const fbOverlay = document.getElementById('feedback-overlay');
         const fbTitle = document.getElementById('fb-title');
-        const fbExp = document.getElementById('fb-explanation');
 
         fbOverlay.classList.remove('hidden');
+        const fbMark = document.getElementById("fb-mark");
         if (isCorrect) {
             fbTitle.textContent = "CORRECT";
             fbTitle.className = "feedback-title correct";
+            if (fbMark) {
+                fbMark.textContent = "〇";
+                fbMark.className = "feedback-mark feedback-mark--ok";
+            }
         } else {
             fbTitle.textContent = "INCORRECT";
             fbTitle.className = "feedback-title incorrect";
+            if (fbMark) {
+                fbMark.textContent = "×";
+                fbMark.className = "feedback-mark feedback-mark--ng";
+            }
         }
 
-        // Build feedback using safe DOM APIs to avoid HTML injection.
-        fbExp.textContent = '';
-        const answerStrong = document.createElement('strong');
-        answerStrong.textContent = `正解: ${q.answer}`;
-        fbExp.appendChild(answerStrong);
-        fbExp.appendChild(document.createElement('br'));
-        fbExp.appendChild(document.createElement('br'));
-        fbExp.appendChild(document.createTextNode(q.explanation || ''));
+        const fbQ = document.getElementById("fb-q-text");
+        const fbList = document.getElementById("fb-choices-list");
+        const fbYours = document.getElementById("fb-your-answer");
+        const fbCorrect = document.getElementById("fb-correct-answer");
+        const fbShort = document.getElementById("fb-short-exp");
+
+        fbQ.textContent = q.text || "";
+        fbList.textContent = "";
+        const choiceOrder = q._displayChoices || q.choices;
+        choiceOrder.forEach((c) => {
+            const li = document.createElement("li");
+            li.textContent = c;
+            if (c === userChoice) li.classList.add("fb-choice--picked");
+            if (c === q.answer) li.classList.add("fb-choice--answer");
+            fbList.appendChild(li);
+        });
+
+        fbYours.textContent = userChoice || "—";
+        fbCorrect.textContent = q.answer || "—";
+        fbShort.textContent = q.explanation || "";
     }
 
     nextQuestion() {
@@ -383,6 +658,14 @@ class SecurityGame {
 
     endGame(isTimeout = false) {
         this.stopTimer();
+        try {
+            localStorage.setItem(
+                lastGameIdsKey(this.difficulty),
+                JSON.stringify(this.questions.map((q) => q.id))
+            );
+        } catch (e) {
+            console.warn("last game ids save failed", e);
+        }
         document.getElementById('feedback-overlay').classList.add('hidden');
         this.showScreen('screen-result');
 
